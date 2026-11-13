@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Industrial Empire: The Cost of Progress</title>
+    <!-- Tailwind CSS for mobile-first layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        victorian: {
+                            bg: '#1a1614',
+                            card: '#2a2421',
+                            accent: '#d4af37', // Gold/Brass
+                            copper: '#b87333',
+                            paper: '#f4e8c1',
+                            darkpaper: '#e2d4a8',
+                            danger: '#a83232',
+                            success: '#2e7d32',
+                            text: '#362d26'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Georgia', 'Cambria', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Victorian / Industrial Aesthetic Styles */
+        body {
+            background-color: #120f0e;
+            color: #f4e8c1;
+            font-family: 'Georgia', serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .parchment {
+            background-color: #f4e8c1;
+            color: #2a2018;
+            background-image: radial-gradient(#e0cf9b 1px, transparent 0);
+            background-size: 12px 12px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.2), 0 10px 25px rgba(0,0,0,0.7);
+            border: 3px double #5c4326;
+        }
+
+        .dark-brass-panel {
+            background: linear-gradient(145deg, #2d251e, #1f1914);
+            border: 2px solid #6e5437;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .steampunk-btn {
+            background: linear-gradient(to bottom, #8a5a2b, #573617);
+            border: 2px solid #d4af37;
+            color: #f4e8c1;
+            text-shadow: 1px 1px 2px #000;
+            box-shadow: 0 4px 0 #2a180a;
+            transition: all 0.1s ease;
+        }
+
+        .steampunk-btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #2a180a;
+        }
+
+        .steampunk-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(80%);
+        }
+
+        .timer-progress {
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between max-w-md mx-auto relative overflow-x-hidden border-x border-amber-900/30">
+
+    <!-- START SCREEN OVERLAY -->
+    <div id="screen-start" class="inset-0 absolute z-50 parchment p-6 flex flex-col justify-between text-center m-2 rounded-lg">
+        <div>
+            <div class="text-xs uppercase tracking-widest text-amber-900 font-bold mb-1">National History Day Edition</div>
+            <h1 class="text-3xl font-black text-amber-950 uppercase tracking-wider mb-1">INDUSTRIAL EMPIRE</h1>
+            <p class="text-xs italic text-amber-900 mb-6">The Cost of Progress (Survival Mode)</p>
+
+            <div class="bg-amber-100/80 p-4 rounded-lg border border-amber-800/40 text-left space-y-2 mb-6 text-xs text-amber-950">
+                <p><strong>🎯 Objective:</strong> Survive as many fast-paced historical rounds as possible!</p>
+                <p><strong>⚠️ Rule of Survival:</strong> Gain <strong>1 POINT</strong> per choice. If ANY stat reaches <strong>0</strong> (Wealth, Happiness, Health, Tech), your empire collapses!</p>
+                <p><strong>⏱️ Speed:</strong> You have <strong>30 seconds</strong> per decision.</p>
+            </div>
+
+            <!-- PLAYER INITIALS INPUT -->
+            <div class="bg-amber-900/10 p-4 rounded-lg border border-amber-900/30 mb-4">
+                <label class="block text-xs uppercase font-bold text-amber-950 mb-2">Enter Your Initials</label>
+                <input type="text" id="input-player-initials" maxlength="3" placeholder="ABC" class="w-32 text-center text-2xl font-black uppercase tracking-widest bg-amber-50 border-2 border-amber-900 rounded py-1 text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-600">
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <button id="btn-start-game" class="w-full py-4 steampunk-btn text-xl font-black rounded tracking-wider uppercase">
+                🚀 BEGIN SURVIVAL
+            </button>
+            <div class="flex justify-between text-xs pt-1">
+                <button id="btn-open-nhd" class="underline text-amber-900 hover:text-amber-950 font-bold">📜 NHD Info</button>
+                <button id="btn-open-scores" class="underline text-amber-900 hover:text-amber-950 font-bold">🏆 High Scores</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GAME HEADER & STATS (SUPER BIG & UNCLUTTERED) -->
+    <header class="dark-brass-panel sticky top-0 z-30 p-3 shadow-lg">
+        <div class="flex justify-between items-center border-b border-amber-900/50 pb-2 mb-2">
+            <div class="flex items-center space-x-2">
+                <span class="text-amber-400 font-bold text-sm">PLAYER: <span id="display-player-id" class="text-amber-200">ABC</span></span>
+                <span class="text-xs text-amber-200/50">| YEAR <span id="game-year">1780</span></span>
+            </div>
+            <button id="sound-toggle" class="text-amber-400 text-lg hover:text-white focus:outline-none">🔊</button>
+        </div>
+
+        <!-- 4 LARGE CORE STATS -->
+        <div class="grid grid-cols-2 gap-2 text-center">
+            <!-- WEALTH -->
+            <div class="bg-black/50 p-2 rounded-lg border border-amber-500/40">
+                <div class="text-xs text-amber-400 font-bold uppercase tracking-wider mb-0.5">💰 Wealth</div>
+                <div id="val-wealth" class="text-3xl font-black text-amber-300 font-mono">60</div>
+                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden mt-1 border border-amber-900/50">
+                    <div id="bar-wealth" class="bg-amber-400 h-full transition-all duration-300" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <!-- HAPPINESS -->
+            <div class="bg-black/50 p-2 rounded-lg border border-emerald-500/40">
+                <div class="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-0.5">😊 Happiness</div>
+                <div id="val-happiness" class="text-3xl font-black text-emerald-300 font-mono">60</div>
+                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden mt-1 border border-amber-900/50">
+                    <div id="bar-happiness" class="bg-emerald-400 h-full transition-all duration-300" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <!-- HEALTH -->
+            <div class="bg-black/50 p-2 rounded-lg border border-rose-500/40">
+                <div class="text-xs text-rose-400 font-bold uppercase tracking-wider mb-0.5">❤️ Health</div>
+                <div id="val-health" class="text-3xl font-black text-rose-300 font-mono">60</div>
+                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden mt-1 border border-amber-900/50">
+                    <div id="bar-health" class="bg-rose-400 h-full transition-all duration-300" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <!-- INNOVATION / TECH -->
+            <div class="bg-black/50 p-2 rounded-lg border border-cyan-500/40">
+                <div class="text-xs text-cyan-400 font-bold uppercase tracking-wider mb-0.5">⚙️ Innovation</div>
+                <div id="val-tech" class="text-3xl font-black text-cyan-300 font-mono">60</div>
+                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden mt-1 border border-amber-900/50">
+                    <div id="bar-tech" class="bg-cyan-400 h-full transition-all duration-300" style="width: 60%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN DECISION AREA -->
+    <main class="flex-1 p-3 flex flex-col justify-between overflow-y-auto">
+        <!-- DECISION CARD -->
+        <div id="event-card" class="parchment rounded-lg p-4 shadow-2xl border-2 border-amber-900/60 relative">
+            <!-- 30-SECOND TIMER HEADER -->
+            <div class="flex justify-between items-center mb-1">
+                <span id="event-round-tag" class="text-xs font-bold text-amber-900 uppercase">ROUND 1</span>
+                <span class="text-xs font-bold text-amber-900">⏱️ <span id="event-seconds-text" class="text-amber-950 font-mono font-black text-sm">30</span>s</span>
+            </div>
+
+            <!-- 30-Sec Progress Bar -->
+            <div class="w-full bg-amber-950/20 h-2.5 rounded-full mb-3 overflow-hidden border border-amber-900/40">
+                <div id="event-timer-bar" class="bg-amber-800 h-full w-full timer-progress"></div>
+            </div>
+
+            <div class="flex items-start space-x-2 mb-2">
+                <span id="event-icon" class="text-2xl">⚠️</span>
+                <div>
+                    <h3 id="event-title" class="font-black text-base text-amber-950 leading-tight">EVENT TITLE</h3>
+                </div>
+            </div>
+            
+            <p id="event-description" class="text-xs text-amber-950 mb-4 leading-relaxed font-serif">
+                Event text describing historical dilemma...
+            </p>
+
+            <!-- Choice Buttons -->
+            <div id="event-choices" class="space-y-2.5">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+
+        <!-- GIANT SCORE DISPLAY AT THE BOTTOM -->
+        <div class="dark-brass-panel rounded-lg p-3 mt-3 text-center shadow-inner">
+            <div class="text-xs font-bold uppercase tracking-widest text-amber-400">SURVIVAL SCORE</div>
+            <div id="display-score" class="text-6xl font-black text-amber-300 font-mono drop-shadow-lg tracking-tight my-0.5">0</div>
+            <div class="text-[10px] text-amber-200/60 font-mono uppercase tracking-wide">
+                1 Point Per Choice Survived | High Score: <span id="display-best-score" class="text-amber-400 font-bold">0</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="dark-brass-panel p-2 text-[10px] flex justify-between items-center z-30">
+        <div id="status-log" class="text-amber-200/80 truncate font-mono">
+            Survive choices without letting any stat hit 0!
+        </div>
+        <button id="btn-open-nhd-footer" class="text-amber-400 underline hover:text-white">NHD Context</button>
+    </footer>
+
+    <!-- GAME OVER / REPLAY MODAL -->
+    <div id="modal-end-game" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-3 hidden">
+        <div class="parchment max-w-md w-full p-5 rounded-lg text-center max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-black text-rose-950 uppercase border-b-2 border-amber-900/40 pb-2 mb-2">
+                💀 EMPIRE COLLAPSED!
+            </h2>
+
+            <div class="text-xs font-bold text-amber-950 mb-1">REASON FOR FAILURE:</div>
+            <p id="end-fail-reason" class="text-sm text-rose-900 font-bold mb-3 bg-rose-100/80 p-2 rounded border border-rose-900/30">
+                Wealth reached 0! Bankruptcy forced closure.
+            </p>
+
+            <!-- HUGE SCORE DISPLAY IN SUMMARY -->
+            <div class="bg-amber-100/90 p-3 rounded-lg border border-amber-900/40 mb-4">
+                <div class="text-xs uppercase font-bold text-amber-900">Final Rounds Survived</div>
+                <div id="end-final-score" class="text-6xl font-black text-amber-950 font-mono my-1">14</div>
+                <div class="text-xs font-bold text-amber-900">PLAYER: <span id="end-player-initials">ABC</span></div>
+            </div>
+
+            <!-- NHD HISTORICAL LESSON -->
+            <div class="bg-amber-200/60 p-3 rounded text-left border border-amber-900/30 mb-4 text-xs">
+                <div class="font-bold text-amber-950 mb-1">📜 Historical Insight:</div>
+                <p id="end-historical-insight" class="text-amber-900 leading-relaxed">
+                    Industrial growth was a fragile balancing act. Oversights in safety, low wages, or technological stagnation caused rapid economic or social failure.
+                </p>
+            </div>
+
+            <button id="btn-restart" class="w-full steampunk-btn py-3 text-lg font-black rounded uppercase">
+                🔄 PLAY AGAIN
+            </button>
+        </div>
+    </div>
+
+    <!-- NHD HISTORICAL ANALYSIS MODAL -->
+    <div id="modal-nhd" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 hidden">
+        <div class="parchment max-w-md w-full p-4 rounded-lg max-h-[85vh] overflow-y-auto text-xs text-amber-950">
+            <div class="flex justify-between items-center border-b-2 border-amber-900/40 pb-2 mb-3">
+                <h2 class="font-black text-sm uppercase">🏛️ NHD Historical Analysis</h2>
+                <button id="btn-close-nhd" class="text-amber-900 text-lg font-bold">✕</button>
+            </div>
+            <div class="space-y-3">
+                <p><strong>Thesis:</strong> Industrialization created immense wealth through rapid innovation, but introduced delicate human trade-offs in worker health, living conditions, and social welfare.</p>
+            </div>
+            <button id="btn-ack-nhd" class="w-full mt-4 steampunk-btn py-2 text-xs font-bold rounded">Return</button>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD MODAL -->
+    <div id="modal-leaderboard" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 hidden">
+        <div class="parchment max-w-md w-full p-4 rounded-lg max-h-[85vh] overflow-y-auto text-xs text-amber-950">
+            <div class="flex justify-between items-center border-b-2 border-amber-900/40 pb-2 mb-3">
+                <h2 class="font-black text-sm uppercase">🏆 High Score Leaderboard</h2>
+                <button id="btn-close-leaderboard" class="text-amber-900 text-lg font-bold">✕</button>
+            </div>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-amber-900/40 text-[10px] uppercase font-bold text-amber-900">
+                        <th class="py-1">Rank</th>
+                        <th class="py-1">Player</th>
+                        <th class="py-1">Rounds Survived</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-rows" class="divide-y divide-amber-900/20 font-mono">
+                </tbody>
+            </table>
+            <button id="btn-ack-scores" class="w-full mt-4 steampunk-btn py-2 text-xs font-bold rounded">Close</button>
+        </div>
+    </div>
+
+    <!-- GAME LOGIC -->
+    <script>
+        class SoundFX {
+            constructor() { this.ctx = null; this.muted = false; }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+            playPoint() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(659.25, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+            playFail() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+            playClick() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // SURVIVAL GAME STATE
+        const gameState = {
+            running: false,
+            playerInitials: 'ABC',
+            score: 0, // Rounds Survived
+            year: 1780,
+
+            // Core 4 stats (0 to 100 scale)
+            wealth: 60,
+            happiness: 60,
+            health: 60,
+            tech: 60,
+
+            // Timer & Event
+            currentEvent: null,
+            timerSecondsLeft: 30,
+            timerInterval: null
+        };
+
+        // HISTORICAL SURVIVAL EVENTS WITH REAL STAT TRADE-OFFS
+        const historicalEvents = [
+            {
+                title: 'Machinery Breakdown!',
+                icon: '⚙️',
+                desc: 'A primary spinning wheel has snapped, stalling factory output.',
+                choices: [
+                    {
+                        text: 'Repair instantly (£20)',
+                        impactText: '-15 💰 Wealth / +10 ⚙️ Innovation',
+                        apply: () => { gameState.wealth -= 15; gameState.tech += 10; }
+                    },
+                    {
+                        text: 'Force manual labor shifts',
+                        impactText: '-15 😊 Happiness / -10 ❤️ Health',
+                        apply: () => { gameState.happiness -= 15; gameState.health -= 10; }
+                    }
+                ]
+            },
+            {
+                title: 'Workers Demand Higher Pay!',
+                icon: '📢',
+                desc: 'Families cannot afford inflated bread prices in town.',
+                choices: [
+                    {
+                        text: 'Grant Wage Raise',
+                        impactText: '-20 💰 Wealth / +15 😊 Happiness',
+                        apply: () => { gameState.wealth -= 20; gameState.happiness += 15; }
+                    },
+                    {
+                        text: 'Refuse Raise',
+                        impactText: '-25 😊 Happiness / +10 💰 Wealth',
+                        apply: () => { gameState.happiness -= 25; gameState.wealth += 10; }
+                    }
+                ]
+            },
+            {
+                title: 'Watt Steam Engine Upgrade',
+                icon: '💨',
+                desc: 'New steam engine patent available to replace water wheels.',
+                choices: [
+                    {
+                        text: 'Buy Steam Engine',
+                        impactText: '-25 💰 Wealth / +25 ⚙️ Innovation / -10 ❤️ Health',
+                        apply: () => { gameState.wealth -= 25; gameState.tech += 25; gameState.health -= 10; }
+                    },
+                    {
+                        text: 'Keep Manual Wheels',
+                        impactText: '-15 ⚙️ Innovation / +10 💰 Wealth',
+                        apply: () => { gameState.tech -= 15; gameState.wealth += 10; }
+                    }
+                ]
+            },
+            {
+                title: 'Factory Safety Inspection',
+                icon: '⚖️',
+                desc: 'Parliament inspectors demand dangerous drive-belts be covered.',
+                choices: [
+                    {
+                        text: 'Install Metal Guards',
+                        impactText: '-15 💰 Wealth / +20 ❤️ Health',
+                        apply: () => { gameState.wealth -= 15; gameState.health += 20; }
+                    },
+                    {
+                        text: 'Bribe Inspector',
+                        impactText: '-10 💰 Wealth / -20 ❤️ Health',
+                        apply: () => { gameState.wealth -= 10; gameState.health -= 20; }
+                    }
+                ]
+            },
+            {
+                title: 'Child Labor Dilemma',
+                icon: '🧒',
+                desc: 'Reformers ask you to stop employing children under 10 years old.',
+                choices: [
+                    {
+                        text: 'Ban Child Labor',
+                        impactText: '-15 💰 Wealth / +20 😊 Happiness / +15 ❤️ Health',
+                        apply: () => { gameState.wealth -= 15; gameState.happiness += 20; gameState.health += 15; }
+                    },
+                    {
+                        text: 'Keep Cheap Youth Labor',
+                        impactText: '+15 💰 Wealth / -20 😊 Happiness / -15 ❤️ Health',
+                        apply: () => { gameState.wealth += 15; gameState.happiness -= 20; gameState.health -= 15; }
+                    }
+                ]
+            },
+            {
+                title: 'Urban Cholera Outbreak',
+                icon: '☣️',
+                desc: 'Contaminated water near tenements infects workforce families.',
+                choices: [
+                    {
+                        text: 'Fund Clean Water Pump',
+                        impactText: '-20 💰 Wealth / +25 ❤️ Health',
+                        apply: () => { gameState.wealth -= 20; gameState.health += 25; }
+                    },
+                    {
+                        text: 'Ignore & Force Shifts',
+                        impactText: '-30 ❤️ Health / -15 😊 Happiness',
+                        apply: () => { gameState.health -= 30; gameState.happiness -= 15; }
+                    }
+                ]
+            },
+            {
+                title: '14-Hour Shift Proposal',
+                icon: '⏳',
+                desc: 'Demand for cotton textiles booms. Extend workday hours?',
+                choices: [
+                    {
+                        text: 'Enforce 14-Hour Workday',
+                        impactText: '+20 💰 Wealth / -20 😊 Happiness / -15 ❤️ Health',
+                        apply: () => { gameState.wealth += 20; gameState.happiness -= 20; gameState.health -= 15; }
+                    },
+                    {
+                        text: 'Maintain 10-Hour Shift',
+                        impactText: '-10 💰 Wealth / +15 😊 Happiness / +10 ❤️ Health',
+                        apply: () => { gameState.wealth -= 10; gameState.happiness += 15; gameState.health += 10; }
+                    }
+                ]
+            }
+        ];
+
+        window.onload = function() {
+            const btnStart = document.getElementById('btn-start-game');
+            const inputInitials = document.getElementById('input-player-initials');
+
+            btnStart.addEventListener('click', () => {
+                sfx.init();
+                sfx.playClick();
+                let initials = (inputInitials.value || 'ABC').toUpperCase().trim().substring(0, 3);
+                if (!initials) initials = 'ABC';
+                gameState.playerInitials = initials;
+                document.getElementById('display-player-id').textContent = initials;
+                document.getElementById('screen-start').classList.add('hidden');
+                startSurvivalGame();
+            });
+
+            document.getElementById('btn-restart').addEventListener('click', () => {
+                document.getElementById('modal-end-game').classList.add('hidden');
+                startSurvivalGame();
+            });
+
+            document.getElementById('btn-open-nhd').addEventListener('click', () => toggleModal('modal-nhd', true));
+            document.getElementById('btn-open-nhd-footer').addEventListener('click', () => toggleModal('modal-nhd', true));
+            document.getElementById('btn-close-nhd').addEventListener('click', () => toggleModal('modal-nhd', false));
+            document.getElementById('btn-ack-nhd').addEventListener('click', () => toggleModal('modal-nhd', false));
+
+            document.getElementById('btn-open-scores').addEventListener('click', () => { renderLeaderboard(); toggleModal('modal-leaderboard', true); });
+            document.getElementById('btn-close-leaderboard').addEventListener('click', () => toggleModal('modal-leaderboard', false));
+            document.getElementById('btn-ack-scores').addEventListener('click', () => toggleModal('modal-leaderboard', false));
+
+            document.getElementById('sound-toggle').addEventListener('click', () => {
+                sfx.init();
+                sfx.muted = !sfx.muted;
+                document.getElementById('sound-toggle').textContent = sfx.muted ? '🔇' : '🔊';
+            });
+
+            updateBestScoreDisplay();
+        };
+
+        function toggleModal(id, show) {
+            sfx.init();
+            sfx.playClick();
+            document.getElementById(id).classList.toggle('hidden', !show);
+        }
+
+        function startSurvivalGame() {
+            gameState.running = true;
+            gameState.score = 0;
+            gameState.year = 1780;
+            gameState.wealth = 60;
+            gameState.happiness = 60;
+            gameState.health = 60;
+            gameState.tech = 60;
+
+            updateUI();
+            nextRound();
+        }
+
+        function nextRound() {
+            if (!gameState.running) return;
+
+            // Check if any stat hit 0
+            const failedStat = checkFailureCondition();
+            if (failedStat) {
+                gameOver(failedStat);
+                return;
+            }
+
+            gameState.year += 2;
+            const eventIndex = Math.floor(Math.random() * historicalEvents.length);
+            gameState.currentEvent = historicalEvents[eventIndex];
+
+            renderEventCard();
+        }
+
+        function renderEventCard() {
+            const ev = gameState.currentEvent;
+            document.getElementById('event-round-tag').textContent = `ROUND ${gameState.score + 1}`;
+            document.getElementById('event-icon').textContent = ev.icon;
+            document.getElementById('event-title').textContent = ev.title;
+            document.getElementById('event-description').textContent = ev.desc;
+
+            const choicesContainer = document.getElementById('event-choices');
+            choicesContainer.innerHTML = '';
+
+            ev.choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-3 rounded-lg steampunk-btn flex flex-col justify-between';
+                btn.innerHTML = `
+                    <span class="font-black text-sm text-amber-100 mb-0.5">${choice.text}</span>
+                    <span class="text-[10px] font-mono text-amber-200/90 font-bold">${choice.impactText}</span>
+                `;
+
+                btn.addEventListener('click', () => {
+                    sfx.playPoint();
+                    choice.apply();
+                    gameState.score += 1;
+                    clearInterval(gameState.timerInterval);
+                    updateUI();
+                    nextRound();
+                });
+
+                choicesContainer.appendChild(btn);
+            });
+
+            // Start 30-Second Timer
+            gameState.timerSecondsLeft = 30;
+            document.getElementById('event-seconds-text').textContent = '30';
+            document.getElementById('event-timer-bar').style.width = '100%';
+
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                gameState.timerSecondsLeft -= 0.1;
+                const pct = (gameState.timerSecondsLeft / 30) * 100;
+                document.getElementById('event-timer-bar').style.width = `${Math.max(0, pct)}%`;
+                document.getElementById('event-seconds-text').textContent = Math.ceil(Math.max(0, gameState.timerSecondsLeft));
+
+                if (gameState.timerSecondsLeft <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    // Penalty for timing out: All stats drop by 15!
+                    gameState.wealth -= 15;
+                    gameState.happiness -= 15;
+                    gameState.health -= 15;
+                    gameState.tech -= 15;
+                    gameState.score += 1;
+                    updateUI();
+                    nextRound();
+                }
+            }, 100);
+        }
+
+        function checkFailureCondition() {
+            if (gameState.wealth <= 0) return '💰 WEALTH REACHED 0 (BANKRUPTCY)';
+            if (gameState.happiness <= 0) return '😊 HAPPINESS REACHED 0 (WORKER RIOT)';
+            if (gameState.health <= 0) return '❤️ HEALTH REACHED 0 (EPIDEMIC FATALITIES)';
+            if (gameState.tech <= 0) return '⚙️ INNOVATION REACHED 0 (OBSOLESCENCE)';
+            return null;
+        }
+
+        function updateUI() {
+            const clamp = (v) => Math.min(100, Math.max(0, Math.floor(v)));
+
+            document.getElementById('val-wealth').textContent = clamp(gameState.wealth);
+            document.getElementById('bar-wealth').style.width = `${clamp(gameState.wealth)}%`;
+
+            document.getElementById('val-happiness').textContent = clamp(gameState.happiness);
+            document.getElementById('bar-happiness').style.width = `${clamp(gameState.happiness)}%`;
+
+            document.getElementById('val-health').textContent = clamp(gameState.health);
+            document.getElementById('bar-health').style.width = `${clamp(gameState.health)}%`;
+
+            document.getElementById('val-tech').textContent = clamp(gameState.tech);
+            document.getElementById('bar-tech').style.width = `${clamp(gameState.tech)}%`;
+
+            document.getElementById('display-score').textContent = gameState.score;
+            document.getElementById('game-year').textContent = gameState.year;
+        }
+
+        function gameOver(reason) {
+            gameState.running = false;
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            sfx.playFail();
+
+            document.getElementById('end-fail-reason').textContent = reason;
+            document.getElementById('end-final-score').textContent = gameState.score;
+            document.getElementById('end-player-initials').textContent = gameState.playerInitials;
+
+            saveScore(gameState.playerInitials, gameState.score);
+            updateBestScoreDisplay();
+
+            document.getElementById('modal-end-game').classList.remove('hidden');
+        }
+
+        function getScores() {
+            try {
+                return JSON.parse(localStorage.getItem('nhd_survival_scores')) || [
+                    { initials: 'ARK', score: 12 },
+                    { initials: 'WAT', score: 9 },
+                    { initials: 'OWN', score: 7 }
+                ];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveScore(initials, score) {
+            const list = getScores();
+            list.push({ initials, score });
+            list.sort((a, b) => b.score - a.score);
+            localStorage.setItem('nhd_survival_scores', JSON.stringify(list.slice(0, 10)));
+        }
+
+        function updateBestScoreDisplay() {
+            const list = getScores();
+            const best = list.length > 0 ? list[0].score : 0;
+            document.getElementById('display-best-score').textContent = best;
+        }
+
+        function renderLeaderboard() {
+            const rows = document.getElementById('leaderboard-rows');
+            rows.innerHTML = '';
+            const list = getScores();
+            list.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1.5 font-bold text-amber-900">#${idx + 1}</td>
+                    <td class="py-1.5 font-bold text-amber-950">${s.initials}</td>
+                    <td class="py-1.5 font-black text-amber-900 font-mono">${s.score} Rounds</td>
+                `;
+                rows.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
